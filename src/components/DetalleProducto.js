@@ -30,9 +30,11 @@ export default function DetalleProducto({
   const [varianteId, setVarianteId] = useState(null);
   const [preguntaTexto, setPreguntaTexto] = useState('');
   const [estrellasInput, setEstrellasInput] = useState('');
+  const [alertaDetalle, setAlertaDetalle] = useState('');
 
   useEffect(() => {
     setVarianteId(null);
+    setAlertaDetalle('');
   }, [producto.id]);
 
   const tieneVariantes = producto.variantes && producto.variantes.length > 0;
@@ -71,11 +73,25 @@ export default function DetalleProducto({
       ? (calificaciones.reduce((acc, val) => acc + val, 0) / calificaciones.length).toFixed(1)
       : 'Sin valoraciones';
 
-  const enviarPregunta = () => {
-    if (preguntaTexto.trim().length < 10) {
-      Alert.alert('Pregunta muy corta', 'Escribe al menos 10 caracteres para enviar tu consulta.');
+  const manejarAgregar = () => {
+    if (tieneVariantes && !varianteActiva) {
+      const msg = 'Debes seleccionar una opción (talla o color) antes de añadir al carrito.';
+      setAlertaDetalle(msg);
+      Alert.alert('Falta seleccionar opción', msg);
       return;
     }
+    setAlertaDetalle('');
+    onAgregarCarrito(producto, varianteActiva, 1);
+  };
+
+  const enviarPregunta = () => {
+    if (preguntaTexto.trim().length < 10) {
+      const msg = 'Escribe una pregunta de al menos 10 caracteres antes de enviar.';
+      setAlertaDetalle(msg);
+      Alert.alert('Pregunta incompleta', msg);
+      return;
+    }
+    setAlertaDetalle('');
     onAgregarConsulta(producto.id, preguntaTexto.trim());
     setPreguntaTexto('');
     Alert.alert('Consulta enviada', 'Tu pregunta quedó registrada en estado Pendiente.');
@@ -83,10 +99,13 @@ export default function DetalleProducto({
 
   const enviarResena = () => {
     const valor = Number(estrellasInput);
-    if (!Number.isInteger(valor) || valor < 1 || valor > 5) {
-      Alert.alert('Valor inválido', 'Ingresa un número entero entre 1 y 5.');
+    if (!estrellasInput.trim() || !Number.isInteger(valor) || valor < 1 || valor > 5) {
+      const msg = 'Ingresa una calificación entera entre 1 y 5 estrellas.';
+      setAlertaDetalle(msg);
+      Alert.alert('Valor inválido', msg);
       return;
     }
+    setAlertaDetalle('');
     onCalificar(producto.id, valor);
     setEstrellasInput('');
     Alert.alert('Gracias', 'Tu calificación ha sido registrada.');
@@ -97,6 +116,12 @@ export default function DetalleProducto({
       <Pressable style={styles.btnVolver} onPress={onVolver}>
         <Text style={styles.textoVolver}>Volver al catálogo</Text>
       </Pressable>
+
+      {alertaDetalle !== '' && (
+        <View style={styles.alertaBox}>
+          <Text style={styles.alertaTexto}>{alertaDetalle}</Text>
+        </View>
+      )}
 
       <View style={styles.tarjeta}>
         {producto.imagen ? (
@@ -123,7 +148,7 @@ export default function DetalleProducto({
 
         {tieneVariantes && (
           <View style={styles.variantesBox}>
-            <Text style={styles.subtitulo}>Selecciona una opción:</Text>
+            <Text style={styles.subtitulo}>Selecciona una opción *</Text>
             <View style={styles.filaVariantes}>
               {producto.variantes.map((v) => {
                 const sel = v.id === varianteId;
@@ -135,7 +160,10 @@ export default function DetalleProducto({
                       sel && styles.chipVarianteActiva,
                       v.stock === 0 && styles.chipAgotada,
                     ]}
-                    onPress={() => setVarianteId(v.id)}
+                    onPress={() => {
+                      setVarianteId(v.id);
+                      setAlertaDetalle('');
+                    }}
                   >
                     <Text style={[styles.textoVariante, sel && styles.textoVarianteActiva]}>
                       {v.etiqueta} ({v.stock === 0 ? 'Agotado' : `${v.stock} uds`})
@@ -162,7 +190,7 @@ export default function DetalleProducto({
 
           <Pressable
             style={[styles.btnComprar, agotado && styles.btnBloqueado]}
-            onPress={() => onAgregarCarrito(producto, varianteActiva, 1)}
+            onPress={manejarAgregar}
             disabled={agotado}
           >
             <Text style={styles.textoComprar}>
@@ -171,7 +199,6 @@ export default function DetalleProducto({
           </Pressable>
         </View>
 
-        {/* Aviso y simulacion de reposicion cuando esta agotado */}
         {agotado && (!tieneVariantes || varianteActiva) && (
           <View style={styles.reposicionBox}>
             <Pressable
@@ -197,7 +224,6 @@ export default function DetalleProducto({
         )}
       </View>
 
-      {/* Preguntas frecuentes del producto */}
       <View style={styles.tarjeta}>
         <Text style={styles.subtitulo}>Preguntas sobre este producto</Text>
         <View style={styles.filaInput}>
@@ -238,7 +264,6 @@ export default function DetalleProducto({
         )}
       </View>
 
-      {/* Recomendaciones relacionadas */}
       <View style={styles.tarjeta}>
         <Text style={styles.subtitulo}>Productos relacionados en {producto.categoria}</Text>
         {relacionados.length === 0 ? (
@@ -265,7 +290,6 @@ export default function DetalleProducto({
         )}
       </View>
 
-      {/* Calificaciones */}
       <View style={styles.tarjeta}>
         <Text style={styles.subtitulo}>Calificar este producto (1 a 5)</Text>
         <View style={styles.filaInput}>
@@ -289,6 +313,14 @@ const styles = StyleSheet.create({
   contenedor: { padding: 14, gap: 12 },
   btnVolver: { alignSelf: 'flex-start', paddingVertical: 4 },
   textoVolver: { color: '#1E3A5F', fontWeight: 'bold', fontSize: 14 },
+  alertaBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    padding: 10,
+    borderRadius: 8,
+  },
+  alertaTexto: { color: '#991B1B', fontSize: 12, fontWeight: '600' },
   tarjeta: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,

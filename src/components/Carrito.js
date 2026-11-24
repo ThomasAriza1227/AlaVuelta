@@ -17,9 +17,9 @@ export default function Carrito({
   const [cuponTexto, setCuponTexto] = useState('');
   const [cuponAplicado, setCuponAplicado] = useState(false);
   const [modalidadEnvio, setModalidadEnvio] = useState('estandar');
-
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [alertaError, setAlertaError] = useState('');
 
   if (carrito.length === 0) {
     return (
@@ -50,37 +50,45 @@ export default function Carrito({
 
   const total = Math.max(0, subtotal - descuento + envio);
 
+  const mostrarError = (titulo, mensaje) => {
+    setAlertaError(mensaje);
+    Alert.alert(titulo, mensaje);
+  };
+
   const aplicarCupon = () => {
+    if (!cuponTexto.trim()) {
+      mostrarError('Cupón vacío', 'Escribe un código de cupón antes de aplicar.');
+      return;
+    }
     if (cuponTexto.trim().toUpperCase() === 'BIENVENIDO10') {
       setCuponAplicado(true);
+      setAlertaError('');
       Alert.alert('Cupón aplicado', 'Se aplicó un 10% de descuento sobre el subtotal.');
     } else {
       setCuponAplicado(false);
-      Alert.alert('Cupón inválido', 'El código ingresado no es válido.');
+      mostrarError('Cupón inválido', 'El código ingresado no es válido. Usa BIENVENIDO10.');
     }
   };
 
   const procesarCompra = () => {
     if (!direccionActual) {
-      Alert.alert('Falta dirección', 'Selecciona una dirección de entrega antes de confirmar.');
+      mostrarError('Falta dirección', 'Debes seleccionar una dirección de entrega antes de continuar.');
       return;
     }
     if (!tarifaMunicipio) {
-      Alert.alert(
-        'Municipio sin cobertura',
-        'Por ahora solo tenemos tarifas configuradas para Mosquera, Funza y Madrid.'
-      );
+      mostrarError('Sin cobertura', 'Solo hay tarifas configuradas para Mosquera, Funza y Madrid.');
       return;
     }
     if (!nombre.trim()) {
-      Alert.alert('Dato faltante', 'Por favor ingresa tu nombre.');
+      mostrarError('Falta el nombre', 'Ingresa tu nombre completo en los datos de contacto.');
       return;
     }
     if (!telefono.trim()) {
-      Alert.alert('Dato faltante', 'Por favor ingresa tu teléfono.');
+      mostrarError('Falta el teléfono', 'Ingresa tu número de teléfono en los datos de contacto.');
       return;
     }
 
+    setAlertaError('');
     const exito = onConfirmarCompra(
       {
         nombre: nombre.trim(),
@@ -141,10 +149,9 @@ export default function Carrito({
         </View>
       ))}
 
-      {/* Direccion y modalidad de envio */}
       <View style={styles.seccion}>
         <View style={styles.filaSpace}>
-          <Text style={styles.subtitulo}>Dirección de entrega</Text>
+          <Text style={styles.subtitulo}>Dirección de entrega *</Text>
           <Pressable onPress={onIrDirecciones}>
             <Text style={styles.link}>Gestionar direcciones</Text>
           </Pressable>
@@ -157,7 +164,10 @@ export default function Carrito({
               <Pressable
                 key={dir.id}
                 style={[styles.chip, sel && styles.chipActivo]}
-                onPress={() => onSeleccionarDireccion(dir.id)}
+                onPress={() => {
+                  onSeleccionarDireccion(dir.id);
+                  setAlertaError('');
+                }}
               >
                 <Text style={[styles.chipTexto, sel && styles.chipTextoActivo]}>
                   {dir.alias} ({dir.municipio})
@@ -191,7 +201,6 @@ export default function Carrito({
         </View>
       </View>
 
-      {/* Cupon promocional */}
       <View style={styles.seccion}>
         <Text style={styles.subtitulo}>Cupón promocional</Text>
         <View style={styles.filaCupon}>
@@ -208,7 +217,6 @@ export default function Carrito({
         </View>
       </View>
 
-      {/* Resumen de compra */}
       <View style={styles.seccion}>
         <Text style={styles.subtitulo}>Resumen de compra</Text>
         <View style={styles.filaResumen}>
@@ -235,22 +243,33 @@ export default function Carrito({
         </View>
       </View>
 
-      {/* Datos de contacto */}
       <View style={styles.seccion}>
-        <Text style={styles.subtitulo}>Datos de contacto</Text>
+        <Text style={styles.subtitulo}>Datos de contacto *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Nombre completo"
+          placeholder="Nombre completo *"
           value={nombre}
-          onChangeText={setNombre}
+          onChangeText={(txt) => {
+            setNombre(txt);
+            if (alertaError) setAlertaError('');
+          }}
         />
         <TextInput
           style={styles.input}
-          placeholder="Teléfono de contacto"
+          placeholder="Teléfono de contacto *"
           keyboardType="phone-pad"
           value={telefono}
-          onChangeText={setTelefono}
+          onChangeText={(txt) => {
+            setTelefono(txt);
+            if (alertaError) setAlertaError('');
+          }}
         />
+
+        {alertaError !== '' && (
+          <View style={styles.alertaBox}>
+            <Text style={styles.alertaTexto}>{alertaError}</Text>
+          </View>
+        )}
 
         <Pressable style={styles.btnPrimario} onPress={procesarCompra}>
           <Text style={styles.textoPrimario}>Confirmar Compra</Text>
@@ -263,6 +282,14 @@ export default function Carrito({
 const styles = StyleSheet.create({
   contenedor: { padding: 14, gap: 12 },
   titulo: { fontSize: 18, fontWeight: 'bold', color: '#0F172A' },
+  alertaBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    padding: 10,
+    borderRadius: 6,
+  },
+  alertaTexto: { color: '#991B1B', fontSize: 12, fontWeight: '600' },
   itemCard: {
     backgroundColor: '#FFFFFF',
     padding: 10,

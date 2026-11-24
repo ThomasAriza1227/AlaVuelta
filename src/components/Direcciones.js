@@ -29,28 +29,22 @@ export default function Direcciones({
 
   const guardar = () => {
     if (!alias.trim()) {
-      Alert.alert('Dato faltante', 'Ingresa un alias (ej. Casa, Trabajo).');
-      return;
+      setAlerta('Falta el alias (ej. Casa, Oficina).');
+      return Alert.alert('Dato faltante', 'Ingresa un alias.');
     }
     if (!municipio.trim()) {
-      Alert.alert('Dato faltante', 'Ingresa el municipio de entrega.');
-      return;
+      setAlerta('Falta indicar el municipio de entrega.');
+      return Alert.alert('Dato faltante', 'Ingresa el municipio.');
     }
     if (!descripcion.trim()) {
-      Alert.alert('Dato faltante', 'Ingresa la dirección y referencia de entrega.');
-      return;
+      setAlerta('Falta escribir la dirección y referencia de entrega.');
+      return Alert.alert('Dato faltante', 'Ingresa la dirección.');
     }
-
+    setAlerta('');
     onGuardarDireccion(
-      {
-        id: idEditando,
-        alias: alias.trim(),
-        municipio: municipio.trim(),
-        descripcion: descripcion.trim(),
-      },
+      { id: idEditando, alias: alias.trim(), municipio: municipio.trim(), descripcion: descripcion.trim() },
       Boolean(idEditando)
     );
-
     Alert.alert('Listo', idEditando ? 'Dirección actualizada.' : 'Dirección registrada.');
     limpiarFormulario();
   };

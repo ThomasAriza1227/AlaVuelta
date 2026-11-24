@@ -11,6 +11,8 @@ export default function Historial({
   const [pedidoAbierto, setPedidoAbierto] = useState(
     historial.length > 0 ? historial[0].codigo : null
   );
+  const [confirmandoCodigo, setConfirmandoCodigo] = useState(null);
+  const [mensajeAviso, setMensajeAviso] = useState('');
 
   if (historial.length === 0) {
     return (
@@ -23,31 +25,51 @@ export default function Historial({
     );
   }
 
-  const confirmarCancelacion = (codigo) => {
-    Alert.alert(
-      'Cancelar pedido',
-      `¿Deseas cancelar el pedido ${codigo} y devolver sus unidades al inventario?`,
-      [
-        { text: 'No', style: 'cancel' },
-        { text: 'Sí, cancelar', style: 'destructive', onPress: () => onCancelarPedido(codigo) },
-      ]
-    );
+  const manejarCancelar = (pedido) => {
+    if (pedido.estado === 'En camino' || pedido.estado === 'Entregado') {
+      const msg = `No se puede cancelar el pedido ${pedido.codigo} porque ya está "${pedido.estado}".`;
+      setMensajeAviso(msg);
+      Alert.alert('No permitido', msg);
+      return;
+    }
+
+    if (confirmandoCodigo !== pedido.codigo) {
+      setConfirmandoCodigo(pedido.codigo);
+      setMensajeAviso(`Pulsa "Confirmar cancelación" para anular ${pedido.codigo} y devolver el stock.`);
+      return;
+    }
+
+    onCancelarPedido(pedido.codigo);
+    setConfirmandoCodigo(null);
+    const msgExito = `Pedido ${pedido.codigo} cancelado. Las unidades volvieron al inventario.`;
+    setMensajeAviso(msgExito);
+    Alert.alert('Pedido cancelado', msgExito);
   };
 
   return (
     <ScrollView contentContainerStyle={styles.contenedor}>
       <Text style={styles.titulo}>Mis Pedidos</Text>
 
+      {mensajeAviso !== '' && (
+        <View style={styles.alertaBox}>
+          <Text style={styles.alertaTexto}>{mensajeAviso}</Text>
+        </View>
+      )}
+
       {historial.map((pedido) => {
         const abierto = pedidoAbierto === pedido.codigo;
         const esCancelado = pedido.estado === 'Cancelado';
         const esEntregado = pedido.estado === 'Entregado';
+        const pidiendoConfirmacion = confirmandoCodigo === pedido.codigo;
 
         return (
           <View key={pedido.codigo} style={styles.card}>
             <Pressable
               style={styles.cabecera}
-              onPress={() => setPedidoAbierto(abierto ? null : pedido.codigo)}
+              onPress={() => {
+                setPedidoAbierto(abierto ? null : pedido.codigo);
+                setConfirmandoCodigo(null);
+              }}
             >
               <View>
                 <Text style={styles.codigo}>{pedido.codigo}</Text>
@@ -86,7 +108,6 @@ export default function Historial({
                   Envío: {formatearCOP(pedido.envio)} | Descuento: -{formatearCOP(pedido.descuento)}
                 </Text>
 
-                {/* Historial cronologico de estados */}
                 <View style={styles.timelineBox}>
                   <Text style={styles.timelineTitulo}>Seguimiento cronológico:</Text>
                   {(pedido.historialEstados || []).map((ev, idx) => (
@@ -96,12 +117,15 @@ export default function Historial({
                   ))}
                 </View>
 
-                {/* Controles de simulacion de entrega y cancelacion */}
                 <View style={styles.filaAcciones}>
                   {!esCancelado && !esEntregado && (
                     <Pressable
                       style={styles.btnSimular}
-                      onPress={() => onAvanzarEstado(pedido.codigo)}
+                      onPress={() => {
+                        setConfirmandoCodigo(null);
+                        setMensajeAviso('');
+                        onAvanzarEstado(pedido.codigo);
+                      }}
                     >
                       <Text style={styles.textoSimular}>Simular avance de entrega</Text>
                     </Pressable>
@@ -109,14 +133,20 @@ export default function Historial({
 
                   {!esCancelado && (
                     <Pressable
-                      style={styles.btnCancelar}
-                      onPress={() =>
-                        pedido.estado === 'Confirmado' || pedido.estado === 'Preparando'
-                          ? confirmarCancelacion(pedido.codigo)
-                          : onCancelarPedido(pedido.codigo)
-                      }
+                      style={[
+                        styles.btnCancelar,
+                        pidiendoConfirmacion && styles.btnCancelarConfirmar,
+                      ]}
+                      onPress={() => manejarCancelar(pedido)}
                     >
-                      <Text style={styles.textoCancelar}>Cancelar pedido</Text>
+                      <Text
+                        style={[
+                          styles.textoCancelar,
+                          pidiendoConfirmacion && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        {pidiendoConfirmacion ? 'Confirmar cancelación' : 'Cancelar pedido'}
+                      </Text>
                     </Pressable>
                   )}
                 </View>
@@ -132,6 +162,14 @@ export default function Historial({
 const styles = StyleSheet.create({
   contenedor: { padding: 14, gap: 10 },
   titulo: { fontSize: 18, fontWeight: 'bold', color: '#0F172A' },
+  alertaBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    padding: 10,
+    borderRadius: 8,
+  },
+  alertaTexto: { color: '#991B1B', fontSize: 13, fontWeight: '600' },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -181,6 +219,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
+  btnCancelarConfirmar: { backgroundColor: '#DC2626' },
   textoCancelar: { color: '#DC2626', fontSize: 12, fontWeight: 'bold' },
   vacioBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, gap: 12 },
   vacioTexto: { fontSize: 15, color: '#475569' },

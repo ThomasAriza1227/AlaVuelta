@@ -20,7 +20,7 @@ export const PRODUCTOS_INICIALES = [
     precio: 65000,
     stock: 8,
     descripcion: 'Auriculares ligeros con estuche de carga y micrófono integrado.',
-    imagen: 'https://www.exito.com/audifonos-inalambricos-4ta-generacion-compatible-con-iphoneandroid-105112016-mp/p',
+    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOmbNXYShubSM1lk6ifoUbt6or6I-dxtXLaEx43NV5gcnhjF4_KFGj2Q&s=10',
     calificaciones: [5, 4],
     variantes: [
       { id: 'VAR-001-N', etiqueta: 'Color Negro', precio: 65000, stock: 5 },
@@ -35,7 +35,7 @@ export const PRODUCTOS_INICIALES = [
     precio: 145000,
     stock: 4,
     descripcion: 'Teclado USB resistente con retroiluminación blanca para estudio u oficina.',
-    imagen: 'https://www.exito.com/teclado-mecanico-gamer-wb-777-compacto-led-rgb-espanol-104953356-mp/p',
+    imagen: 'https://www.apcomputadores.com/wp-content/uploads/3-54.jpg',
     calificaciones: [5, 5],
   },
   {
@@ -46,7 +46,7 @@ export const PRODUCTOS_INICIALES = [
     precio: 42000,
     stock: 0,
     descripcion: 'Base plegable en aluminio para mejorar la postura al trabajar.',
-    imagen: 'https://www.exito.com/base-soporte-portatil-para-computador-plegable-102729920-mp/p',
+    imagen: 'https://publicitar.com.co/wp-content/uploads/2023/02/SOPORTE-METALICO-PARA-PORTATIL-ALUMINIUM-II.jpg',
     calificaciones: [4],
   },
   {

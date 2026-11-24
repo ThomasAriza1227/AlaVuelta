@@ -16,20 +16,15 @@ export default function CentroAyuda({
   const enviarSolicitud = () => {
     const codigoPedido = pedidoSeleccionado || (historial[0] ? historial[0].codigo : '');
     if (!codigoPedido) {
-      Alert.alert('Sin pedido', 'Debes seleccionar un pedido del historial para crear una solicitud.');
-      return;
+      setAlerta('Debes seleccionar un pedido del historial.');
+      return Alert.alert('Sin pedido', 'Selecciona un pedido antes de enviar.');
     }
     if (descripcion.trim().length < 15) {
-      Alert.alert('Descripción corta', 'Describe el inconveniente con al menos 15 caracteres.');
-      return;
+      setAlerta('Falta detallar el inconveniente (mínimo 15 caracteres).');
+      return Alert.alert('Descripción corta', 'Escribe al menos 15 caracteres.');
     }
-
-    onCrearTicket({
-      pedido: codigoPedido,
-      motivo,
-      descripcion: descripcion.trim(),
-    });
-
+    setAlerta('');
+    onCrearTicket({ pedido: codigoPedido, motivo, descripcion: descripcion.trim() });
     setDescripcion('');
     Alert.alert('Solicitud creada', 'Tu caso quedó registrado con estado Abierto.');
   };
