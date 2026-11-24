@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { formatearCOP } from '../data/productos';
+import { TARIFAS_ENVIO } from '../data/datosIniciales';
 
 export default function Carrito({
   carrito,
+  direcciones,
+  direccionActual,
+  onSeleccionarDireccion,
+  onIrDirecciones,
   onCambiarCantidad,
   onEliminar,
   onConfirmarCompra,
@@ -11,11 +16,10 @@ export default function Carrito({
 }) {
   const [cuponTexto, setCuponTexto] = useState('');
   const [cuponAplicado, setCuponAplicado] = useState(false);
+  const [modalidadEnvio, setModalidadEnvio] = useState('estandar');
 
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [municipio, setMunicipio] = useState('');
-  const [direccion, setDireccion] = useState('');
 
   if (carrito.length === 0) {
     return (
@@ -30,7 +34,20 @@ export default function Carrito({
 
   const subtotal = carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
   const descuento = cuponAplicado ? Math.round(subtotal * 0.1) : 0;
-  const envio = subtotal >= 150000 ? 0 : 8000;
+
+  const tarifaMunicipio = direccionActual ? TARIFAS_ENVIO[direccionActual.municipio] : null;
+  const envioValido = Boolean(direccionActual && tarifaMunicipio && modalidadEnvio);
+  const envio = envioValido
+    ? modalidadEnvio === 'expres'
+      ? tarifaMunicipio.expres
+      : tarifaMunicipio.estandar
+    : 0;
+  const plazoEstimado = envioValido
+    ? modalidadEnvio === 'expres'
+      ? tarifaMunicipio.plazoExpres
+      : tarifaMunicipio.plazoEstandar
+    : 'Sin calcular';
+
   const total = Math.max(0, subtotal - descuento + envio);
 
   const aplicarCupon = () => {
@@ -44,6 +61,17 @@ export default function Carrito({
   };
 
   const procesarCompra = () => {
+    if (!direccionActual) {
+      Alert.alert('Falta dirección', 'Selecciona una dirección de entrega antes de confirmar.');
+      return;
+    }
+    if (!tarifaMunicipio) {
+      Alert.alert(
+        'Municipio sin cobertura',
+        'Por ahora solo tenemos tarifas configuradas para Mosquera, Funza y Madrid.'
+      );
+      return;
+    }
     if (!nombre.trim()) {
       Alert.alert('Dato faltante', 'Por favor ingresa tu nombre.');
       return;
@@ -52,23 +80,16 @@ export default function Carrito({
       Alert.alert('Dato faltante', 'Por favor ingresa tu teléfono.');
       return;
     }
-    if (!municipio.trim()) {
-      Alert.alert('Dato faltante', 'Por favor ingresa tu municipio.');
-      return;
-    }
-    if (!direccion.trim()) {
-      Alert.alert('Dato faltante', 'Por favor ingresa tu dirección.');
-      return;
-    }
 
     const exito = onConfirmarCompra(
       {
         nombre: nombre.trim(),
         telefono: telefono.trim(),
-        municipio: municipio.trim(),
-        direccion: direccion.trim(),
+        municipio: direccionActual.municipio,
+        direccion: `${direccionActual.alias} - ${direccionActual.descripcion}`,
       },
-      { subtotal, descuento, envio, total }
+      { subtotal, descuento, envio, total },
+      modalidadEnvio
     );
 
     if (exito) {
@@ -76,8 +97,6 @@ export default function Carrito({
       setCuponTexto('');
       setNombre('');
       setTelefono('');
-      setMunicipio('');
-      setDireccion('');
     }
   };
 
@@ -86,16 +105,21 @@ export default function Carrito({
       <Text style={styles.titulo}>Mi Carrito</Text>
 
       {carrito.map((item) => (
-        <View key={item.id} style={styles.itemCard}>
+        <View key={item.keyUnico} style={styles.itemCard}>
           <View style={styles.itemInfo}>
-            <Text style={styles.itemNombre}>{item.nombre}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.itemNombre}>{item.nombre}</Text>
+              {item.varianteEtiqueta && (
+                <Text style={styles.varianteTag}>Opción: {item.varianteEtiqueta}</Text>
+              )}
+            </View>
             <Text style={styles.itemPrecio}>{formatearCOP(item.precio)} c/u</Text>
           </View>
 
           <View style={styles.controles}>
             <Pressable
               style={[styles.btnCant, item.cantidad <= 1 && styles.btnCantDisabled]}
-              onPress={() => onCambiarCantidad(item.id, -1)}
+              onPress={() => onCambiarCantidad(item.keyUnico, -1)}
               disabled={item.cantidad <= 1}
             >
               <Text style={styles.textoCant}>-</Text>
@@ -105,17 +129,67 @@ export default function Carrito({
 
             <Pressable
               style={styles.btnCant}
-              onPress={() => onCambiarCantidad(item.id, 1)}
+              onPress={() => onCambiarCantidad(item.keyUnico, 1)}
             >
               <Text style={styles.textoCant}>+</Text>
             </Pressable>
 
-            <Pressable style={styles.btnEliminar} onPress={() => onEliminar(item.id)}>
+            <Pressable style={styles.btnEliminar} onPress={() => onEliminar(item.keyUnico)}>
               <Text style={styles.textoEliminar}>Eliminar</Text>
             </Pressable>
           </View>
         </View>
       ))}
+
+      {/* Direccion y modalidad de envio */}
+      <View style={styles.seccion}>
+        <View style={styles.filaSpace}>
+          <Text style={styles.subtitulo}>Dirección de entrega</Text>
+          <Pressable onPress={onIrDirecciones}>
+            <Text style={styles.link}>Gestionar direcciones</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.filaChips}>
+          {direcciones.map((dir) => {
+            const sel = direccionActual && direccionActual.id === dir.id;
+            return (
+              <Pressable
+                key={dir.id}
+                style={[styles.chip, sel && styles.chipActivo]}
+                onPress={() => onSeleccionarDireccion(dir.id)}
+              >
+                <Text style={[styles.chipTexto, sel && styles.chipTextoActivo]}>
+                  {dir.alias} ({dir.municipio})
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {direccionActual && (
+          <Text style={styles.textoDireccion}>{direccionActual.descripcion}</Text>
+        )}
+
+        <Text style={[styles.subtitulo, { marginTop: 4 }]}>Modalidad de envío</Text>
+        <View style={styles.filaChips}>
+          {[
+            { key: 'estandar', label: 'Envío Estándar' },
+            { key: 'expres', label: 'Envío Exprés' },
+          ].map((mod) => {
+            const sel = modalidadEnvio === mod.key;
+            return (
+              <Pressable
+                key={mod.key}
+                style={[styles.chip, sel && styles.chipActivo]}
+                onPress={() => setModalidadEnvio(mod.key)}
+              >
+                <Text style={[styles.chipTexto, sel && styles.chipTextoActivo]}>{mod.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
       {/* Cupon promocional */}
       <View style={styles.seccion}>
@@ -134,7 +208,7 @@ export default function Carrito({
         </View>
       </View>
 
-      {/* Resumen de valores */}
+      {/* Resumen de compra */}
       <View style={styles.seccion}>
         <Text style={styles.subtitulo}>Resumen de compra</Text>
         <View style={styles.filaResumen}>
@@ -148,9 +222,11 @@ export default function Carrito({
           </View>
         )}
         <View style={styles.filaResumen}>
-          <Text style={styles.labelResumen}>Envío:</Text>
+          <Text style={styles.labelResumen}>
+            Envío ({envioValido ? `${direccionActual.municipio} · ${plazoEstimado}` : 'Pendiente'}):
+          </Text>
           <Text style={styles.valorResumen}>
-            {envio === 0 ? 'Gratis ($0)' : `${formatearCOP(envio)} COP`}
+            {envioValido ? `${formatearCOP(envio)} COP` : 'No disponible'}
           </Text>
         </View>
         <View style={[styles.filaResumen, styles.filaTotal]}>
@@ -159,9 +235,9 @@ export default function Carrito({
         </View>
       </View>
 
-      {/* Datos basicos del comprador */}
+      {/* Datos de contacto */}
       <View style={styles.seccion}>
-        <Text style={styles.subtitulo}>Datos de entrega</Text>
+        <Text style={styles.subtitulo}>Datos de contacto</Text>
         <TextInput
           style={styles.input}
           placeholder="Nombre completo"
@@ -174,18 +250,6 @@ export default function Carrito({
           keyboardType="phone-pad"
           value={telefono}
           onChangeText={setTelefono}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Municipio (Mosquera, Madrid o Funza)"
-          value={municipio}
-          onChangeText={setMunicipio}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Dirección de entrega"
-          value={direccion}
-          onChangeText={setDireccion}
         />
 
         <Pressable style={styles.btnPrimario} onPress={procesarCompra}>
@@ -208,7 +272,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   itemInfo: { flexDirection: 'row', justifyContent: 'space-between' },
-  itemNombre: { fontWeight: 'bold', color: '#0F172A', flex: 1 },
+  itemNombre: { fontWeight: 'bold', color: '#0F172A' },
+  varianteTag: { fontSize: 12, color: '#475569' },
   itemPrecio: { color: '#1E3A5F', fontWeight: '600' },
   controles: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   btnCant: {
@@ -232,7 +297,20 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     gap: 8,
   },
+  filaSpace: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   subtitulo: { fontWeight: 'bold', color: '#0F172A', fontSize: 14 },
+  link: { color: '#1E3A5F', fontSize: 12, fontWeight: 'bold' },
+  filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+  },
+  chipActivo: { backgroundColor: '#1E3A5F' },
+  chipTexto: { fontSize: 12, color: '#334155', fontWeight: '600' },
+  chipTextoActivo: { color: '#FFFFFF' },
+  textoDireccion: { fontSize: 12, color: '#475569' },
   filaCupon: { flexDirection: 'row', gap: 8 },
   inputCupon: {
     flex: 1,

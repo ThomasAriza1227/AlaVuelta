@@ -4,21 +4,34 @@ export const formatearCOP = (valor) => {
   return '$' + Math.round(valor).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
+export const obtenerStockProducto = (producto) => {
+  if (producto.variantes && producto.variantes.length > 0) {
+    return producto.variantes.reduce((total, v) => total + v.stock, 0);
+  }
+  return producto.stock;
+};
+
 export const PRODUCTOS_INICIALES = [
   {
     id: 'PROD-001',
     nombre: 'Audífonos Inalámbricos Bluetooth',
     categoria: 'Tecnología',
+    marca: 'SoundPro',
     precio: 65000,
     stock: 8,
     descripcion: 'Auriculares ligeros con estuche de carga y micrófono integrado.',
     imagen: 'https://www.exito.com/audifonos-inalambricos-4ta-generacion-compatible-con-iphoneandroid-105112016-mp/p',
     calificaciones: [5, 4],
+    variantes: [
+      { id: 'VAR-001-N', etiqueta: 'Color Negro', precio: 65000, stock: 5 },
+      { id: 'VAR-001-B', etiqueta: 'Color Blanco', precio: 68000, stock: 3 },
+    ],
   },
   {
     id: 'PROD-002',
     nombre: 'Teclado Mecánico Compacto',
     categoria: 'Tecnología',
+    marca: 'KeyTech',
     precio: 145000,
     stock: 4,
     descripcion: 'Teclado USB resistente con retroiluminación blanca para estudio u oficina.',
@@ -29,6 +42,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-003',
     nombre: 'Soporte Ajustable para Portátil',
     categoria: 'Tecnología',
+    marca: 'ErgoBase',
     precio: 42000,
     stock: 0,
     descripcion: 'Base plegable en aluminio para mejorar la postura al trabajar.',
@@ -39,6 +53,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-004',
     nombre: 'Lámpara LED de Escritorio',
     categoria: 'Hogar',
+    marca: 'LumiHome',
     precio: 48000,
     stock: 10,
     descripcion: 'Lámpara recargable con tres niveles de intensidad de luz cálida.',
@@ -49,6 +64,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-005',
     nombre: 'Cafetera Prensa Francesa 600ml',
     categoria: 'Hogar',
+    marca: 'BaristaCo',
     precio: 55000,
     stock: 6,
     descripcion: 'Cafetera de vidrio resistente al calor con filtro en acero inoxidable.',
@@ -59,6 +75,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-006',
     nombre: 'Juego de Organizadores Multiuso',
     categoria: 'Hogar',
+    marca: 'OrdenaYa',
     precio: 32000,
     stock: 12,
     descripcion: 'Set de tres cajas apilables ideales para cocina o escritorio.',
@@ -69,6 +86,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-007',
     nombre: 'Balón de Fútbol Cosido N.5',
     categoria: 'Deporte',
+    marca: 'GolPro',
     precio: 78000,
     stock: 5,
     descripcion: 'Balón resistente para cancha sintética o grama natural con buen agarre.',
@@ -79,6 +97,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-008',
     nombre: 'Colchoneta Antideslizante Yoga',
     categoria: 'Deporte',
+    marca: 'FitZen',
     precio: 52000,
     stock: 9,
     descripcion: 'Tapete acolchado de alta densidad para rutinas de ejercicio en casa.',
@@ -89,6 +108,7 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-009',
     nombre: 'Termo Deportivo Térmico 750ml',
     categoria: 'Deporte',
+    marca: 'HydroMax',
     precio: 38000,
     stock: 15,
     descripcion: 'Botella en acero inoxidable que conserva bebidas frías por 12 horas.',
@@ -99,26 +119,38 @@ export const PRODUCTOS_INICIALES = [
     id: 'PROD-010',
     nombre: 'Chaqueta Rompevientos Unisex',
     categoria: 'Ropa',
+    marca: 'AndesWear',
     precio: 115000,
     stock: 3,
     descripcion: 'Prenda ligera impermeable con capota ajustable para clima frío.',
     imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAkOHo4gsGL-6Xh2-uV3PGQejx3n_DJ0VR14KIs7LRMYN5KmR07lyQnVg&s=10',
     calificaciones: [5],
+    variantes: [
+      { id: 'VAR-010-S', etiqueta: 'Talla S', precio: 115000, stock: 2 },
+      { id: 'VAR-010-M', etiqueta: 'Talla M', precio: 115000, stock: 1 },
+      { id: 'VAR-010-L', etiqueta: 'Talla L', precio: 120000, stock: 0 },
+    ],
   },
   {
     id: 'PROD-011',
     nombre: 'Camiseta Básica Algodón',
     categoria: 'Ropa',
+    marca: 'BásicoCo',
     precio: 35000,
     stock: 14,
     descripcion: 'Camiseta cuello redondo en algodón suave de uso diario color negro.',
     imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3OLBXThmSjxZGQ69Co4gYMnX09O2raA4Xa6sSd-IsAP5nxLLX_8Sq_bQ&s=10',
     calificaciones: [4, 5],
+    variantes: [
+      { id: 'VAR-011-S', etiqueta: 'Talla S', precio: 35000, stock: 6 },
+      { id: 'VAR-011-M', etiqueta: 'Talla M', precio: 35000, stock: 8 },
+    ],
   },
   {
     id: 'PROD-012',
     nombre: 'Gorra Deportiva Ajustable',
     categoria: 'Ropa',
+    marca: 'CapStyle',
     precio: 28000,
     stock: 7,
     descripcion: 'Gorra clásica transpirable con cierre trasero regulable en tela.',
